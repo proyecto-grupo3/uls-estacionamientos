@@ -39,23 +39,76 @@
   </script>
 
   <style>
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Custom Scrollbar for live history list */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
 
+    /* Soft Pulse animation for live sync indicator */
     @keyframes pulse-ring {
       0% { transform: scale(0.95); opacity: 0.8; }
       50% { transform: scale(1.15); opacity: 0.4; }
       100% { transform: scale(0.95); opacity: 0.8; }
     }
-    .pulse-dot { animation: pulse-ring 2s infinite ease-in-out; }
+    .pulse-dot {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 antialiased selection:bg-uls-navy selection:text-white">
 
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- CUSTOM ALERT MODAL -->
+  <div id="customAlertModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-95 opacity-0 duration-200" id="alertModalCard">
+      <div class="flex items-center gap-3 mb-4">
+        <div id="alertIconContainer" class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-700">
+          <i id="alertIcon" class="fa-solid fa-circle-info text-xl"></i>
+        </div>
+        <h3 id="alertTitle" class="text-lg font-bold text-slate-900 font-heading">Notificación</h3>
+      </div>
+      <p id="alertMessage" class="text-slate-600 text-sm leading-relaxed mb-6">Mensaje informativo de sistema.</p>
+      <div class="flex justify-end">
+        <button id="alertBtnClose" class="px-5 py-2.5 bg-uls-navy hover:bg-uls-dark text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM CONFIRM MODAL -->
+  <div id="customConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-95 opacity-0 duration-200" id="confirmModalCard">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 text-amber-700">
+          <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+        </div>
+        <h3 id="confirmTitle" class="text-lg font-bold text-slate-900 font-heading">Confirmar Acción</h3>
+      </div>
+      <p id="confirmMessage" class="text-slate-600 text-sm leading-relaxed mb-6">¿Desea proceder con esta acción?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirmBtnCancel" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-all">
+          Cancelar
+        </button>
+        <button id="confirmBtnOk" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all active:scale-95">
+          Sí, confirmar
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- PIN LOGIN MODAL (Guard Mode Access) -->
   <div id="pinModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -64,7 +117,7 @@
         <i class="fa-solid fa-shield-halved text-2xl"></i>
       </div>
       <h3 class="text-lg font-bold text-slate-900 font-heading">Acceso Guardia</h3>
-      <p class="text-xs text-slate-500 mb-4">Ingrese la clave de seguridad para activar los controles.</p>
+      <p class="text-xs text-slate-500 mb-4">Ingrese la clave de seguridad para activar los controles del recinto.</p>
 
       <input type="password" id="inputPin" maxlength="20" placeholder="•••••••••••" class="w-full text-center text-xl font-bold tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl mb-4 focus:border-uls-navy focus:outline-none transition-colors">
 
@@ -82,8 +135,9 @@
   <!-- MAIN APP CONTAINER -->
   <main class="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/60 overflow-hidden border border-slate-200/80 my-2">
     
-    <!-- HEADER -->
+    <!-- HEADER INSTITUCIONAL -->
     <header class="bg-gradient-to-r from-uls-dark to-uls-navy text-white p-5 sm:p-6 relative overflow-hidden">
+      <!-- Decorative ULS Badge Pattern -->
       <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl pointer-events-none">
         <i class="fa-solid fa-square-parking"></i>
       </div>
@@ -114,74 +168,197 @@
 
     <div class="p-5 sm:p-6 space-y-6">
 
-      <!-- GUARD CONTROL PANEL (Hidden by default) -->
+      <!-- GUARD CONTROL PANEL (Hidden by default, unlocked with PIN) -->
       <section id="guardPanel" class="hidden bg-slate-900 text-white rounded-2xl p-5 border-2 border-uls-gold/50 shadow-lg space-y-4 transition-all">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2 text-uls-gold">
             <i class="fa-solid fa-shield-halved text-lg"></i>
             <h2 class="font-bold font-heading text-sm uppercase tracking-wider">Panel Operativo del Guardia</h2>
           </div>
-          <span class="text-[11px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-medium">Control Activo</span>
+          <span class="text-[11px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-medium">Modo Control Activo</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <button onclick="adjustOccupancy(-1)" class="py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
-            <i class="fa-solid fa-minus"></i> Salida de Auto
+        <!-- Input Opcional de Patente y Cantidad -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2 space-y-1">
+            <label for="inputPatente" class="text-xs text-slate-400 font-medium block">Patente Vehículo (Opcional)</label>
+            <div class="relative">
+              <input type="text" id="inputPatente" placeholder="EJ: AB1234" maxlength="6" class="w-full bg-slate-800 text-white placeholder-slate-500 text-center text-sm font-mono font-bold py-2.5 px-3 rounded-xl border border-slate-700 focus:border-uls-gold focus:outline-none uppercase">
+              <i class="fa-solid fa-id-card absolute right-3 top-3 text-slate-500 text-xs"></i>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label for="inputCantidad" class="text-xs text-slate-400 font-medium block">Cantidad vehículos</label>
+            <div class="flex items-center bg-slate-800 rounded-xl border border-slate-700 p-1">
+              <button onclick="adjCantidad(-1)" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold transition-all text-sm">-</button>
+              <input type="number" id="inputCantidad" value="1" min="1" max="110" class="w-full bg-transparent text-center text-sm font-bold text-white focus:outline-none">
+              <button onclick="adjCantidad(1)" class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold transition-all text-sm">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones Táctiles de Acción -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button id="btnEntrada" onclick="handleRegistrarAcceso(1)" class="py-4 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl font-bold font-heading text-sm shadow-lg shadow-emerald-950/40 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+            <span class="flex items-center gap-2 text-base"><i class="fa-solid fa-circle-plus"></i> ENTRADA</span>
+            <span class="text-[11px] font-normal text-emerald-100/80">Registrar Ingreso</span>
           </button>
-          <button onclick="adjustOccupancy(1)" class="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
-            <i class="fa-solid fa-plus"></i> Ingreso de Auto
+
+          <button id="btnSalida" onclick="handleRegistrarAcceso(-1)" class="py-4 px-4 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl font-bold font-heading text-sm shadow-lg shadow-rose-950/40 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+            <span class="flex items-center gap-2 text-base"><i class="fa-solid fa-circle-minus"></i> SALIDA</span>
+            <span class="text-[11px] font-normal text-rose-100/80">Registrar Egreso</span>
           </button>
         </div>
-        <button onclick="logoutGuard()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all">
-          Cerrar Modo Guardia
-        </button>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+          <button onclick="confirmarReset()" class="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1.5 transition-colors py-1">
+            <i class="fa-solid fa-rotate-left text-xs"></i> Reiniciar Contador
+          </button>
+          <button onclick="lockGuardMode()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors py-1">
+            <i class="fa-solid fa-lock text-xs"></i> Bloquear Panel
+          </button>
+        </div>
       </section>
 
-      <!-- STATS DISPLAY -->
-      <div class="grid grid-cols-3 gap-3">
-        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Disponibles</span>
-          <span id="statAvailable" class="text-2xl sm:text-3xl font-extrabold font-heading text-emerald-600">--</span>
-        </div>
-        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Ocupados</span>
-          <span id="statOccupied" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-800">--</span>
-        </div>
-        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Estado</span>
-          <span id="statStatus" class="text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-slate-200 text-slate-700">Calculando</span>
-        </div>
-      </div>
+      <!-- SEMÁFORO Y ESTADO EN TIEMPO REAL -->
+      <section class="space-y-4">
+        
+        <!-- Status Badge Container -->
+        <div id="semaforoBadge" class="p-4 rounded-2xl border flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-900 transition-all duration-300">
+          <div class="flex items-center gap-3">
+            <div id="semaforoIconBg" class="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500 text-white shadow-md text-2xl transition-all">
+              <i id="semaforoIcon" class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold tracking-wider uppercase opacity-80">Estado Actual de Aforo</div>
+              <h2 id="semaforoText" class="text-xl font-black font-heading tracking-tight">🟢 DISPONIBLE</h2>
+            </div>
+          </div>
 
-      <!-- VISUAL PROGRESS BAR -->
-      <div class="space-y-2">
-        <div class="flex justify-between text-xs font-semibold text-slate-600">
-          <span>Ocupación del Recinto</span>
-          <span id="statPercentage">0%</span>
+          <div class="text-right">
+            <span class="text-[11px] font-semibold text-slate-500 uppercase block">Capacidad</span>
+            <span id="porcentajeText" class="text-lg font-extrabold font-heading text-slate-800">0%</span>
+          </div>
         </div>
-        <div class="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden p-0.5">
-          <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-      </div>
 
-      <!-- FOOTER ACTIONS -->
-      <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
-        <button onclick="openPinModal()" id="btnGuardAccess" class="text-xs text-slate-500 hover:text-uls-navy font-medium flex items-center gap-1.5 transition-colors">
-          <i class="fa-solid fa-lock text-[10px]"></i> Acceso Guardia
+        <!-- Live Ticker update timer -->
+        <div class="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock text-slate-400"></i> <span id="tiempoActualizado">Actualizando servidor...</span></span>
+          <span class="flex items-center gap-1 text-slate-400" title="Sincronización instantánea Firestore"><i class="fa-solid fa-bolt text-amber-500"></i> En vivo</span>
+        </div>
+
+        <!-- Ocupación Progress Bar -->
+        <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden p-0.5 shadow-inner">
+          <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out w-0"></div>
+        </div>
+
+        <!-- Big Numerical Counters -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 block mb-1">Cupos Libres</span>
+            <span id="counterLibres" class="text-4xl sm:text-5xl font-black font-heading text-emerald-600">110</span>
+            <span class="text-[11px] text-slate-400 font-medium block mt-1">Disponibles ahora</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Cupos Ocupados</span>
+            <span id="counterOcupados" class="text-4xl sm:text-5xl font-black font-heading text-slate-800">0</span>
+            <span class="text-[11px] text-slate-400 font-medium block mt-1">En el estacionamiento</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DYNAMIC PEAK HOUR ALERT BANNER -->
+      <section id="bannerPeakHours" class="rounded-2xl p-4 text-xs leading-relaxed border transition-all flex items-start gap-3 bg-blue-50 border-blue-200 text-blue-900">
+        <i id="bannerPeakIcon" class="fa-solid fa-circle-info text-base mt-0.5 text-blue-600"></i>
+        <div>
+          <strong id="bannerPeakTitle" class="font-bold block mb-0.5 text-sm">Evaluando flujo horario...</strong>
+          <span id="bannerPeakDesc">Cargando estimación histórica de congestión.</span>
+        </div>
+      </section>
+
+      <!-- MITIGATION PANEL (Appears when 0 spaces free) -->
+      <section id="panelMitigacion" class="hidden bg-amber-50 border-2 border-amber-300/80 text-amber-900 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-2 text-amber-800">
+          <i class="fa-solid fa-triangle-exclamation text-lg text-amber-600"></i>
+          <h3 class="font-bold font-heading text-sm uppercase">Recinto Completo - Alternativas Recomendadas</h3>
+        </div>
+        <p class="text-xs leading-relaxed">
+          Para evitar dar vueltas en bucle (cruising) y reducir emisiones, le sugerimos hacer uso de las siguientes opciones de aparcamiento colindantes:
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+          <div class="bg-white/80 p-2.5 rounded-xl border border-amber-200 flex items-center gap-2">
+            <i class="fa-solid fa-location-dot text-amber-600 text-base"></i>
+            <div>
+              <strong class="block font-bold">Campus Ignacio Domeyko</strong>
+              <span class="text-[11px] text-slate-600">A 3 cuadras (Acceso Benavente)</span>
+            </div>
+          </div>
+          <div class="bg-white/80 p-2.5 rounded-xl border border-amber-200 flex items-center gap-2">
+            <i class="fa-solid fa-road text-amber-600 text-base"></i>
+            <div>
+              <strong class="block font-bold">Calle Amunátegui</strong>
+              <span class="text-[11px] text-slate-600">Vía pública autorizada</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE ACTIVITY LOG -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-slate-400"></i> Historial Reciente (Sincronizado)
+          </h3>
+          <span class="text-[11px] text-slate-400 font-medium">Últimos movimientos</span>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 max-h-48 overflow-y-auto">
+          <ul id="listaHistorial" class="divide-y divide-slate-200/60 text-xs">
+            <li class="py-3 text-center text-slate-400 italic">Conectando con la base de datos...</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- FOOTER ACCESS BUTTON & CREDITS -->
+      <footer class="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <button id="btnToggleGuard" onclick="openPinModal()" class="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl flex items-center justify-center gap-2 transition-all">
+          <i class="fa-solid fa-shield-cat"></i> Acceso Guardia
         </button>
-        <span id="lastUpdated" class="text-[11px] text-slate-400 font-mono">Sincronizado en vivo</span>
-      </div>
+        
+        <div class="text-center sm:text-right text-[11px]">
+          <span class="block font-semibold text-slate-500">ULS • Desafío de Proyecto de Ingeniería I</span>
+          <span>Grupo 3 - Isabel Bongard</span>
+        </div>
+      </footer>
 
     </div>
   </main>
 
-  <!-- FIREBASE LOGIC & UI SCRIPT -->
+  <!-- FIREBASE MODULE & APPLICATION LOGIC -->
   <script type="module">
-    // Importar SDK de Firebase desde los CDN oficiales
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
-    // Tu configuración oficial de Firebase (extraída de tu imagen)
+    /* Constantes de la aplicacion */
+    const TOTAL_CAPACITY = 110;
+    const GUARD_PIN = "Bongard2026";
+
+    /* Estado global */
+    let isGuardMode = false;
+    let isMutating = false;
+    let isConnected = false;
+    let lastUpdateDate = new Date();
+    let timerInterval = null;
+
+    let parkingData = {
+      ocupados: 0,
+      lastUpdate: null,
+      logs: []
+    };
+
+    /* Tu configuracion oficial de Firebase */
     const firebaseConfig = {
       apiKey: "AIzaSyC0PCxy8SlWTYDZPld5DZllJ2t0068qOoM",
       authDomain: "estacionamientos-uls.firebaseapp.com",
@@ -191,122 +368,491 @@
       appId: "1:620111031119:web:c4c9f8ed11e6c01678333a"
     };
 
-    // Inicializar Firebase y Firestore
+    /* Inicializacion de Firebase */
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const TOTAL_SPACES = 110;
-    const PARKING_DOC_REF = doc(db, "parking", "isabel_bongard");
+    /* Rutas en Firestore */
+    const stateDocRef = doc(db, 'parking', 'isabel_bongard');
+    const logsColRef = collection(db, 'parking_logs');
 
-    let isGuardMode = false;
+    /* Notificaciones Toast */
+    window.showToast = function(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
 
-    // Escuchar cambios en tiempo real desde Firestore
-    onSnapshot(PARKING_DOC_REF, async (docSnap) => {
-      const syncText = document.getElementById("syncText");
-      const syncBadge = document.getElementById("syncBadge");
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        warning: 'bg-amber-500 text-white',
+        info: 'bg-slate-800 text-white'
+      };
+
+      toast.className = `p-3.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type] || bgColors.info}`;
       
-      syncText.innerText = "En vivo";
-      syncBadge.className = "flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+      const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        updateUI(data.occupied || 0);
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-sm"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    };
+
+    /* Modal Alerta Personalizado */
+    window.showCustomAlert = function(title, message, iconType = 'info') {
+      const modal = document.getElementById('customAlertModal');
+      const card = document.getElementById('alertModalCard');
+      document.getElementById('alertTitle').innerText = title;
+      document.getElementById('alertMessage').innerText = message;
+
+      const iconEl = document.getElementById('alertIcon');
+      const iconBg = document.getElementById('alertIconContainer');
+
+      if (iconType === 'error') {
+        iconBg.className = "w-10 h-10 rounded-full flex items-center justify-center bg-rose-100 text-rose-700";
+        iconEl.className = "fa-solid fa-circle-xmark text-xl";
+      } else if (iconType === 'warning') {
+        iconBg.className = "w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 text-amber-700";
+        iconEl.className = "fa-solid fa-triangle-exclamation text-xl";
       } else {
-        // Si el documento no existe todavía en la base de datos, lo inicializamos en 0
-        await setDoc(PARKING_DOC_REF, { occupied: 0, updatedAt: new Date().toISOString() });
+        iconBg.className = "w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-700";
+        iconEl.className = "fa-solid fa-circle-info text-xl";
       }
-    }, (error) => {
-      console.error("Error al sincronizar con Firebase:", error);
-      const syncText = document.getElementById("syncText");
-      const syncBadge = document.getElementById("syncBadge");
-      syncText.innerText = "Error de conexión";
-      syncBadge.className = "flex items-center gap-2 bg-rose-500/20 border border-rose-400/40 text-rose-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+      }, 10);
+    };
+
+    document.getElementById('alertBtnClose').addEventListener('click', () => {
+      const modal = document.getElementById('customAlertModal');
+      const card = document.getElementById('alertModalCard');
+      card.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => modal.classList.add('hidden'), 200);
     });
 
-    // Función para actualizar los elementos visuales en pantalla
-    function updateUI(occupied) {
-      const available = Math.max(0, TOTAL_SPACES - occupied);
-      const percentage = Math.min(100, Math.round((occupied / TOTAL_SPACES) * 100));
+    /* Modal Confirmacion Personalizado */
+    window.showCustomConfirm = function(title, message, onConfirm) {
+      const modal = document.getElementById('customConfirmModal');
+      const card = document.getElementById('confirmModalCard');
+      document.getElementById('confirmTitle').innerText = title;
+      document.getElementById('confirmMessage').innerText = message;
 
-      document.getElementById("statOccupied").innerText = occupied;
-      document.getElementById("statAvailable").innerText = available;
-      document.getElementById("statPercentage").innerText = `${percentage}%`;
-      document.getElementById("progressBar").style.width = `${percentage}%`;
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+      }, 10);
 
-      const statusBadge = document.getElementById("statStatus");
-      const progressBar = document.getElementById("progressBar");
+      const btnOk = document.getElementById('confirmBtnOk');
+      const btnCancel = document.getElementById('confirmBtnCancel');
 
-      if (percentage >= 95) {
-        statusBadge.innerText = "Completo";
-        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-rose-100 text-rose-700";
-        progressBar.className = "bg-rose-600 h-full rounded-full transition-all duration-500";
-      } else if (percentage >= 80) {
-        statusBadge.innerText = "Alto";
-        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-amber-100 text-amber-700";
-        progressBar.className = "bg-amber-500 h-full rounded-full transition-all duration-500";
-      } else {
-        statusBadge.innerText = "Fluido";
-        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-emerald-100 text-emerald-700";
-        progressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
-      }
+      const cleanup = () => {
+        card.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+      };
 
-      const now = new Date();
-      document.getElementById("lastUpdated").innerText = `Actualizado: ${now.toLocaleTimeString()}`;
+      btnOk.onclick = () => {
+        cleanup();
+        onConfirm();
+      };
+      btnCancel.onclick = () => {
+        cleanup();
+      };
+    };
+
+    /* Escuchadores en Tiempo Real */
+    function setupRealtimeListeners() {
+      /* Estado general */
+      onSnapshot(stateDocRef, (docSnap) => {
+        isConnected = true;
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const val = typeof data.ocupados === 'number' ? data.ocupados : (typeof data.occupied === 'number' ? data.occupied : 0);
+          parkingData.ocupados = val;
+          if (data.lastUpdate && data.lastUpdate.toDate) {
+            lastUpdateDate = data.lastUpdate.toDate();
+          } else {
+            lastUpdateDate = new Date();
+          }
+          renderUI();
+        } else {
+          setDoc(stateDocRef, {
+            ocupados: 0,
+            lastUpdate: serverTimestamp(),
+            updatedBy: 'Sistema Inicial'
+          });
+        }
+        updateSyncBadge(true, "En vivo");
+      }, (error) => {
+        console.error("Error listening state:", error);
+        isConnected = false;
+        updateSyncBadge(false, "Desconectado");
+      });
+
+      /* Historial de logs */
+      onSnapshot(logsColRef, (querySnap) => {
+        const logs = [];
+        querySnap.forEach((docItem) => {
+          const d = docItem.data();
+          logs.push({
+            id: docItem.id,
+            type: d.type || 'SISTEMA',
+            desc: d.desc || '',
+            timestamp: d.timestamp && d.timestamp.toDate ? d.timestamp.toDate() : new Date()
+          });
+        });
+
+        logs.sort((a, b) => b.timestamp - a.timestamp);
+        parkingData.logs = logs.slice(0, 20);
+        renderLogs();
+      }, (error) => {
+        console.error("Error listening logs:", error);
+      });
     }
 
-    // Función para que el guardia modifique el número de autos
-    window.adjustOccupancy = async function(change) {
+    function updateSyncBadge(online, text) {
+      const badge = document.getElementById('syncBadge');
+      const textEl = document.getElementById('syncText');
+      if (online) {
+        badge.className = "flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+        textEl.innerText = text;
+      } else {
+        badge.className = "flex items-center gap-2 bg-rose-500/20 border border-rose-400/40 text-rose-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+        textEl.innerText = text;
+      }
+    }
+
+    /* Registro de Movimiento */
+    window.handleRegistrarAcceso = async function(delta) {
+      if (!isConnected) {
+        showCustomAlert("Conexión requerida", "No hay conexión activa con la base de datos.", "error");
+        return;
+      }
+
+      if (isMutating) return;
+
+      const qtyInput = document.getElementById('inputCantidad');
+      let qty = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+      if (qty < 1) qty = 1;
+
+      const currentOcupados = parkingData.ocupados || 0;
+      const change = delta * qty;
+      const newOcupados = currentOcupados + change;
+
+      if (newOcupados < 0) {
+        showCustomAlert("Acción Inválida", `No se pueden retirar ${qty} vehículos. Solo hay ${currentOcupados} ocupados en el registro.`, "warning");
+        return;
+      }
+
+      if (newOcupados > TOTAL_CAPACITY) {
+        showCustomAlert("Capacidad Excedida", `No se pueden ingresar ${qty} vehículos. Solo quedan ${TOTAL_CAPACITY - currentOcupados} cupos disponibles.`, "warning");
+        return;
+      }
+
+      setDebounceState(true);
+
+      const patenteInput = document.getElementById('inputPatente');
+      const patenteVal = patenteInput ? patenteInput.value.trim().toUpperCase() : '';
+
+      let logDesc = "";
+      if (delta > 0) {
+        logDesc = qty === 1 
+          ? (patenteVal ? `Patente: ${patenteVal}` : 'Vehículo no identificado') 
+          : `Ingreso múltiple: ${qty} vehículos`;
+      } else {
+        logDesc = qty === 1 
+          ? (patenteVal ? `Salida patente: ${patenteVal}` : 'Vehículo retirado') 
+          : `Salida múltiple: ${qty} vehículos`;
+      }
+
       try {
-        const docSnap = await getDoc(PARKING_DOC_REF);
-        let currentOccupied = 0;
-        if (docSnap.exists()) {
-          currentOccupied = docSnap.data().occupied || 0;
-        }
+        await setDoc(stateDocRef, {
+          ocupados: newOcupados,
+          lastUpdate: serverTimestamp(),
+          updatedBy: isGuardMode ? 'Guardia de Seguridad' : 'Sistema'
+        }, { merge: true });
 
-        let newOccupied = currentOccupied + change;
-        if (newOccupied < 0) newOccupied = 0;
-        if (newOccupied > TOTAL_SPACES) newOccupied = TOTAL_SPACES;
-
-        // Guardar el nuevo valor en Firestore (esto actualizará automáticamente a todos los conectados)
-        await setDoc(PARKING_DOC_REF, {
-          occupied: newOccupied,
-          updatedAt: new Date().toISOString()
+        await addDoc(logsColRef, {
+          type: delta > 0 ? 'ENTRADA' : 'SALIDA',
+          desc: logDesc,
+          timestamp: serverTimestamp()
         });
+
+        if (patenteInput) patenteInput.value = '';
+        if (qtyInput) qtyInput.value = '1';
+
+        showToast(delta > 0 ? `+${qty} Entrada registrada` : `-${qty} Salida registrada`, delta > 0 ? 'success' : 'info');
       } catch (err) {
-        console.error("Error al actualizar ocupación:", err);
-        alert("No se pudo actualizar el registro. Revisa tu conexión.");
+        console.error("Firestore Write Error:", err);
+        showCustomAlert("Error de red", "No se pudo actualizar la información en el servidor.", "error");
+      } finally {
+        setTimeout(() => setDebounceState(false), 500);
       }
     };
 
-    // Funciones globales para el PIN de acceso del guardia
+    function setDebounceState(state) {
+      isMutating = state;
+      const btnIn = document.getElementById('btnEntrada');
+      const btnOut = document.getElementById('btnSalida');
+      if (btnIn) btnIn.disabled = state;
+      if (btnOut) btnOut.disabled = state;
+    }
+
+    /* Reset de Aforo */
+    window.confirmarReset = function() {
+      showCustomConfirm(
+        "¿Reiniciar Aforo?",
+        "Esta acción establecerá el aforo ocupado en 0 y registrará un evento de reinicio de jornada en el servidor.",
+        async () => {
+          try {
+            await setDoc(stateDocRef, {
+              ocupados: 0,
+              lastUpdate: serverTimestamp(),
+              updatedBy: 'Guardia (Reset)'
+            });
+
+            await addDoc(logsColRef, {
+              type: 'SISTEMA',
+              desc: 'Reinicio manual de aforo (Fin de jornada)',
+              timestamp: serverTimestamp()
+            });
+
+            showToast("Contador de aforo reiniciado a 0", "warning");
+          } catch (err) {
+            console.error("Reset Error:", err);
+            showCustomAlert("Error", "No se pudo reiniciar el contador en Firebase.", "error");
+          }
+        }
+      );
+    };
+
+    /* Ajuste de Cantidad (+/-) */
+    window.adjCantidad = function(val) {
+      const input = document.getElementById('inputCantidad');
+      if (!input) return;
+      let curr = parseInt(input.value) || 1;
+      curr += val;
+      if (curr < 1) curr = 1;
+      if (curr > TOTAL_CAPACITY) curr = TOTAL_CAPACITY;
+      input.value = curr;
+    };
+
+    /* Renderizado de Interfaz Principal */
+    function renderUI() {
+      const ocupados = parkingData.ocupados || 0;
+      const libres = TOTAL_CAPACITY - ocupados;
+      const porcentaje = Math.min(100, Math.max(0, Math.round((ocupados / TOTAL_CAPACITY) * 100)));
+
+      document.getElementById('counterLibres').innerText = libres;
+      document.getElementById('counterOcupados').innerText = ocupados;
+      document.getElementById('porcentajeText').innerText = `${porcentaje}%`;
+
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = `${porcentaje}%`;
+
+      const semaforoBadge = document.getElementById('semaforoBadge');
+      const semaforoText = document.getElementById('semaforoText');
+      const semaforoIconBg = document.getElementById('semaforoIconBg');
+      const semaforoIcon = document.getElementById('semaforoIcon');
+      const mitigacionPanel = document.getElementById('panelMitigacion');
+
+      if (libres === 0) {
+        semaforoBadge.className = "p-4 rounded-2xl border flex items-center justify-between bg-rose-50 border-rose-200 text-rose-900 transition-all duration-300 shadow-sm";
+        semaforoText.innerText = "🔴 RECINTO LLENO";
+        semaforoIconBg.className = "w-12 h-12 rounded-xl flex items-center justify-center bg-rose-600 text-white shadow-md text-2xl transition-all";
+        semaforoIcon.className = "fa-solid fa-circle-xmark";
+        progressBar.className = "bg-rose-600 h-full rounded-full transition-all duration-500 ease-out";
+        mitigacionPanel.classList.remove('hidden');
+      } else if (libres <= 10) {
+        semaforoBadge.className = "p-4 rounded-2xl border flex items-center justify-between bg-amber-50 border-amber-200 text-amber-900 transition-all duration-300 shadow-sm";
+        semaforoText.innerText = `🟡 CASI LLENO (${libres} libre${libres === 1 ? '' : 's'})`;
+        semaforoIconBg.className = "w-12 h-12 rounded-xl flex items-center justify-center bg-amber-500 text-white shadow-md text-2xl transition-all";
+        semaforoIcon.className = "fa-solid fa-triangle-exclamation";
+        progressBar.className = "bg-amber-500 h-full rounded-full transition-all duration-500 ease-out";
+        mitigacionPanel.classList.add('hidden');
+      } else {
+        semaforoBadge.className = "p-4 rounded-2xl border flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-900 transition-all duration-300 shadow-sm";
+        semaforoText.innerText = "🟢 DISPONIBLE";
+        semaforoIconBg.className = "w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500 text-white shadow-md text-2xl transition-all";
+        semaforoIcon.className = "fa-solid fa-circle-check";
+        progressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out";
+        mitigacionPanel.classList.add('hidden');
+      }
+
+      updateTickerText();
+      evaluarBannerHorario();
+    }
+
+    /* Renderizado del Historial */
+    function renderLogs() {
+      const list = document.getElementById('listaHistorial');
+      if (!list) return;
+
+      if (!parkingData.logs || parkingData.logs.length === 0) {
+        list.innerHTML = `<li class="py-3 text-center text-slate-400 italic">No hay registros recientes.</li>`;
+        return;
+      }
+
+      list.innerHTML = parkingData.logs.map(log => {
+        let tagClass = "bg-slate-200 text-slate-700";
+        let icon = "fa-circle-info";
+
+        if (log.type === 'ENTRADA') {
+          tagClass = "bg-emerald-100 text-emerald-800 font-bold border border-emerald-300/50";
+          icon = "fa-circle-plus";
+        } else if (log.type === 'SALIDA') {
+          tagClass = "bg-rose-100 text-rose-800 font-bold border border-rose-300/50";
+          icon = "fa-circle-minus";
+        } else if (log.type === 'SISTEMA') {
+          tagClass = "bg-amber-100 text-amber-800 font-bold border border-amber-300/50";
+          icon = "fa-gear";
+        }
+
+        const timeStr = log.timestamp ? log.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--';
+
+        return `
+          <li class="py-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 overflow-hidden">
+              <span class="px-2 py-0.5 rounded-md text-[10px] uppercase flex items-center gap-1 shrink-0 ${tagClass}">
+                <i class="fa-solid ${icon}"></i> ${log.type}
+              </span>
+              <span class="text-slate-700 font-medium truncate">${log.desc}</span>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400 shrink-0">${timeStr}</span>
+          </li>
+        `;
+      }).join('');
+    }
+
+    /* Contador de Tiempo Transcurrido */
+    function updateTickerText() {
+      const tickerEl = document.getElementById('tiempoActualizado');
+      if (!tickerEl) return;
+
+      if (!lastUpdateDate) {
+        tickerEl.innerText = "Sincronizando...";
+        return;
+      }
+
+      const diffSec = Math.max(0, Math.floor((new Date() - lastUpdateDate) / 1000));
+      if (diffSec < 5) {
+        tickerEl.innerText = "Actualizado justo ahora";
+      } else if (diffSec < 60) {
+        tickerEl.innerText = `Actualizado hace ${diffSec} seg`;
+      } else {
+        const min = Math.floor(diffSec / 60);
+        const remSec = diffSec % 60;
+        tickerEl.innerText = `Actualizado hace ${min} min ${remSec}s`;
+      }
+    }
+
+    /* Evaluacion del Banner de Horario Punta */
+    function evaluarBannerHorario() {
+      const banner = document.getElementById('bannerPeakHours');
+      const title = document.getElementById('bannerPeakTitle');
+      const desc = document.getElementById('bannerPeakDesc');
+      const icon = document.getElementById('bannerPeakIcon');
+
+      const now = new Date();
+      const decimalTime = now.getHours() + (now.getMinutes() / 60);
+
+      if (decimalTime >= 7.0 && decimalTime <= 8.0) {
+        banner.className = "rounded-2xl p-4 text-xs leading-relaxed border transition-all flex items-start gap-3 bg-rose-50 border-rose-200 text-rose-900";
+        icon.className = "fa-solid fa-fire-flame-curved text-base mt-0.5 text-rose-600";
+        title.innerText = "⚠️ Punta Matutina (Concentración del 90,9%)";
+        desc.innerText = "Saturación acelerada histórica entre 07:15 y 07:30 hrs. Se recomienda anticipar llegada o evaluar transporte público.";
+      }
+      else if (decimalTime >= 13.5 && decimalTime <= 14.33) {
+        banner.className = "rounded-2xl p-4 text-xs leading-relaxed border transition-all flex items-start gap-3 bg-amber-50 border-amber-200 text-amber-900";
+        icon.className = "fa-solid fa-hourglass-half text-base mt-0.5 text-amber-600";
+        title.innerText = "ℹ️ Tramo de Baja Rotación (Mediodía)";
+        desc.innerText = "Tasa de recambio reducida. Los pocos cupos liberados suelen ser absorbidos de inmediato.";
+      }
+      else if (decimalTime >= 16.5 && decimalTime <= 17.5) {
+        banner.className = "rounded-2xl p-4 text-xs leading-relaxed border transition-all flex items-start gap-3 bg-emerald-50 border-emerald-200 text-emerald-900";
+        icon.className = "fa-solid fa-right-from-bracket text-base mt-0.5 text-emerald-600";
+        title.innerText = "ℹ️ Fase de Vaciamiento Tarde/Noche";
+        desc.innerText = "Mayor desocupación de calzos por término de jornada académica y administrativa.";
+      }
+      else {
+        banner.className = "rounded-2xl p-4 text-xs leading-relaxed border transition-all flex items-start gap-3 bg-slate-50 border-slate-200 text-slate-700";
+        icon.className = "fa-solid fa-circle-check text-base mt-0.5 text-emerald-600";
+        title.innerText = "✅ Tránsito Regular";
+        desc.innerText = "Flujo continuo de vehículos sin episodios críticos registrados fuera de hora punta.";
+      }
+    }
+
+    /* Handlers del PIN y Modo Guardia */
     window.openPinModal = function() {
-      document.getElementById("pinModal").classList.remove("hidden");
-      document.getElementById("inputPin").value = "";
-      document.getElementById("inputPin").focus();
+      const modal = document.getElementById('pinModal');
+      const input = document.getElementById('inputPin');
+      input.value = "";
+      modal.classList.remove('hidden');
+      setTimeout(() => input.focus(), 100);
     };
 
     window.closePinModal = function() {
-      document.getElementById("pinModal").classList.add("hidden");
+      document.getElementById('pinModal').classList.add('hidden');
     };
 
     window.submitPin = function() {
-      const pin = document.getElementById("inputPin").value;
-      if (pin === "54321") { // PIN de prueba configurado
+      const pin = document.getElementById('inputPin').value;
+      if (pin === GUARD_PIN) {
         isGuardMode = true;
-        document.getElementById("guardPanel").classList.remove("hidden");
-        document.getElementById("userRoleBadge").innerHTML = `<i class="fa-solid fa-shield-halved text-uls-gold"></i> <strong class="text-uls-gold">Modo Guardia</strong>`;
         closePinModal();
+        document.getElementById('guardPanel').classList.remove('hidden');
+        document.getElementById('userRoleBadge').innerHTML = `<i class="fa-solid fa-user-shield text-uls-gold"></i> Modo Guardia`;
+        document.getElementById('btnToggleGuard').classList.add('hidden');
+        showToast("Modo Guardia activado correctamente", "success");
       } else {
-        alert("PIN incorrecto. Intente nuevamente.");
-        document.getElementById("inputPin").value = "";
+        showToast("Clave PIN incorrecta", "error");
       }
     };
 
-    window.logoutGuard = function() {
-      isGuardMode = false;
-      document.getElementById("guardPanel").classList.add("hidden");
-      document.getElementById("userRoleBadge").innerHTML = `<i class="fa-solid fa-user text-slate-300"></i> Vista Pública`;
+    window.lockGuardMode = function() {
+      showCustomConfirm(
+        "¿Bloquear Panel de Control?",
+        "Se cerrará la sesión operativa del guardia y la aplicación retornará a la vista pública de solo lectura.",
+        () => {
+          isGuardMode = false;
+          document.getElementById('guardPanel').classList.add('hidden');
+          document.getElementById('userRoleBadge').innerHTML = `<i class="fa-solid fa-user text-slate-300"></i> Vista Pública`;
+          document.getElementById('btnToggleGuard').classList.remove('hidden');
+          showToast("Modo Guardia bloqueado", "info");
+        }
+      );
     };
+
+    document.getElementById('inputPin').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') submitPin();
+    });
+
+    /* Inicio de la aplicacion */
+    window.addEventListener('DOMContentLoaded', () => {
+      setupRealtimeListeners();
+      timerInterval = setInterval(() => {
+        updateTickerText();
+        if (new Date().getSeconds() === 0) {
+          evaluarBannerHorario();
+        }
+      }, 1000);
+    });
   </script>
 </body>
 </html>
