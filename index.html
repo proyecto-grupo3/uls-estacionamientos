@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Estacionamientos ULS - Campus Isabel Bongard</title>
+  <link rel="icon" type="image/png" href="logo-uls-vertical.png">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -65,7 +66,7 @@
       <h3 class="text-lg font-bold text-slate-900 font-heading">Acceso Guardia</h3>
       <p class="text-xs text-slate-500 mb-4">Ingrese la clave de seguridad para activar los controles.</p>
 
-      <input type="password" id="inputPin" maxlength="8" placeholder="•••••" class="w-full text-center text-2xl font-bold tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl mb-4 focus:border-uls-navy focus:outline-none transition-colors">
+      <input type="password" id="inputPin" maxlength="20" placeholder="•••••••••••" class="w-full text-center text-xl font-bold tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl mb-4 focus:border-uls-navy focus:outline-none transition-colors">
 
       <div class="flex gap-2">
         <button onclick="closePinModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl">
@@ -75,7 +76,6 @@
           Ingresar
         </button>
       </div>
-      <p class="text-[11px] text-slate-400 mt-3 font-mono">PIN demo: 54321</p>
     </div>
   </div>
 
