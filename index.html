@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estacionamientos ULS - Campus Isabel Bongard</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            uls: {
+              navy: '#003366',
+              dark: '#002244',
+              gold: '#E6A100',
+              accent: '#004B93'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-dot { animation: pulse-ring 2s infinite ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 antialiased selection:bg-uls-navy selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- PIN LOGIN MODAL (Guard Mode Access) -->
+  <div id="pinModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xs w-full p-6 text-center transform transition-all">
+      <div class="w-12 h-12 bg-uls-navy/10 text-uls-navy rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i class="fa-solid fa-shield-halved text-2xl"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 font-heading">Acceso Guardia</h3>
+      <p class="text-xs text-slate-500 mb-4">Ingrese la clave de seguridad para activar los controles.</p>
+
+      <input type="password" id="inputPin" maxlength="8" placeholder="•••••" class="w-full text-center text-2xl font-bold tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl mb-4 focus:border-uls-navy focus:outline-none transition-colors">
+
+      <div class="flex gap-2">
+        <button onclick="closePinModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl">
+          Cancelar
+        </button>
+        <button onclick="submitPin()" class="w-1/2 py-2.5 bg-uls-navy hover:bg-uls-dark text-white font-semibold text-sm rounded-xl shadow-md active:scale-95 transition-all">
+          Ingresar
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-3 font-mono">PIN demo: 54321</p>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/60 overflow-hidden border border-slate-200/80 my-2">
+    
+    <!-- HEADER -->
+    <header class="bg-gradient-to-r from-uls-dark to-uls-navy text-white p-5 sm:p-6 relative overflow-hidden">
+      <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl pointer-events-none">
+        <i class="fa-solid fa-square-parking"></i>
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+            <i class="fa-solid fa-building-columns text-uls-gold text-xl"></i>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold tracking-widest text-uls-gold uppercase block">Universidad de La Serena</span>
+            <h1 class="text-xl font-extrabold font-heading tracking-tight leading-tight">Campus Isabel Bongard</h1>
+          </div>
+        </div>
+
+        <!-- Sync Status Pill -->
+        <div id="syncBadge" class="flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          <span id="syncText">Conectando...</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-slate-200/90 pt-2 border-t border-white/10">
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-car-side text-uls-gold"></i> Capacidad Máxima: <strong class="text-white font-bold">110 Plazas</strong></span>
+        <span class="flex items-center gap-1.5" id="userRoleBadge"><i class="fa-solid fa-user text-slate-300"></i> Vista Pública</span>
+      </div>
+    </header>
+
+    <div class="p-5 sm:p-6 space-y-6">
+
+      <!-- GUARD CONTROL PANEL (Hidden by default) -->
+      <section id="guardPanel" class="hidden bg-slate-900 text-white rounded-2xl p-5 border-2 border-uls-gold/50 shadow-lg space-y-4 transition-all">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2 text-uls-gold">
+            <i class="fa-solid fa-shield-halved text-lg"></i>
+            <h2 class="font-bold font-heading text-sm uppercase tracking-wider">Panel Operativo del Guardia</h2>
+          </div>
+          <span class="text-[11px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-medium">Control Activo</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="adjustOccupancy(-1)" class="py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
+            <i class="fa-solid fa-minus"></i> Salida de Auto
+          </button>
+          <button onclick="adjustOccupancy(1)" class="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
+            <i class="fa-solid fa-plus"></i> Ingreso de Auto
+          </button>
+        </div>
+        <button onclick="logoutGuard()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all">
+          Cerrar Modo Guardia
+        </button>
+      </section>
+
+      <!-- STATS DISPLAY -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
+          <span class="text-xs font-medium text-slate-500 block mb-1">Disponibles</span>
+          <span id="statAvailable" class="text-2xl sm:text-3xl font-extrabold font-heading text-emerald-600">--</span>
+        </div>
+        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
+          <span class="text-xs font-medium text-slate-500 block mb-1">Ocupados</span>
+          <span id="statOccupied" class="text-2xl sm:text-3xl font-extrabold font-heading text-slate-800">--</span>
+        </div>
+        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
+          <span class="text-xs font-medium text-slate-500 block mb-1">Estado</span>
+          <span id="statStatus" class="text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-slate-200 text-slate-700">Calculando</span>
+        </div>
+      </div>
+
+      <!-- VISUAL PROGRESS BAR -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-semibold text-slate-600">
+          <span>Ocupación del Recinto</span>
+          <span id="statPercentage">0%</span>
+        </div>
+        <div class="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden p-0.5">
+          <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- FOOTER ACTIONS -->
+      <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="openPinModal()" id="btnGuardAccess" class="text-xs text-slate-500 hover:text-uls-navy font-medium flex items-center gap-1.5 transition-colors">
+          <i class="fa-solid fa-lock text-[10px]"></i> Acceso Guardia
+        </button>
+        <span id="lastUpdated" class="text-[11px] text-slate-400 font-mono">Sincronizado en vivo</span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FIREBASE LOGIC & UI SCRIPT -->
+  <script type="module">
+    // Importar SDK de Firebase desde los CDN oficiales
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+    // Tu configuración oficial de Firebase (extraída de tu imagen)
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0PCxy8SlWTYDZPld5DZllJ2t0068qOoM",
+      authDomain: "estacionamientos-uls.firebaseapp.com",
+      projectId: "estacionamientos-uls",
+      storageBucket: "estacionamientos-uls.firebasestorage.app",
+      messagingSenderId: "620111031119",
+      appId: "1:620111031119:web:c4c9f8ed11e6c01678333a"
+    };
+
+    // Inicializar Firebase y Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const TOTAL_SPACES = 110;
+    const PARKING_DOC_REF = doc(db, "parking", "isabel_bongard");
+
+    let isGuardMode = false;
+
+    // Escuchar cambios en tiempo real desde Firestore
+    onSnapshot(PARKING_DOC_REF, async (docSnap) => {
+      const syncText = document.getElementById("syncText");
+      const syncBadge = document.getElementById("syncBadge");
+      
+      syncText.innerText = "En vivo";
+      syncBadge.className = "flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        updateUI(data.occupied || 0);
+      } else {
+        // Si el documento no existe todavía en la base de datos, lo inicializamos en 0
+        await setDoc(PARKING_DOC_REF, { occupied: 0, updatedAt: new Date().toISOString() });
+      }
+    }, (error) => {
+      console.error("Error al sincronizar con Firebase:", error);
+      const syncText = document.getElementById("syncText");
+      const syncBadge = document.getElementById("syncBadge");
+      syncText.innerText = "Error de conexión";
+      syncBadge.className = "flex items-center gap-2 bg-rose-500/20 border border-rose-400/40 text-rose-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md";
+    });
+
+    // Función para actualizar los elementos visuales en pantalla
+    function updateUI(occupied) {
+      const available = Math.max(0, TOTAL_SPACES - occupied);
+      const percentage = Math.min(100, Math.round((occupied / TOTAL_SPACES) * 100));
+
+      document.getElementById("statOccupied").innerText = occupied;
+      document.getElementById("statAvailable").innerText = available;
+      document.getElementById("statPercentage").innerText = `${percentage}%`;
+      document.getElementById("progressBar").style.width = `${percentage}%`;
+
+      const statusBadge = document.getElementById("statStatus");
+      const progressBar = document.getElementById("progressBar");
+
+      if (percentage >= 95) {
+        statusBadge.innerText = "Completo";
+        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-rose-100 text-rose-700";
+        progressBar.className = "bg-rose-600 h-full rounded-full transition-all duration-500";
+      } else if (percentage >= 80) {
+        statusBadge.innerText = "Alto";
+        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-amber-100 text-amber-700";
+        progressBar.className = "bg-amber-500 h-full rounded-full transition-all duration-500";
+      } else {
+        statusBadge.innerText = "Fluido";
+        statusBadge.className = "text-xs font-bold uppercase px-2 py-1 rounded-md inline-block mt-1 bg-emerald-100 text-emerald-700";
+        progressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+      }
+
+      const now = new Date();
+      document.getElementById("lastUpdated").innerText = `Actualizado: ${now.toLocaleTimeString()}`;
+    }
+
+    // Función para que el guardia modifique el número de autos
+    window.adjustOccupancy = async function(change) {
+      try {
+        const docSnap = await getDoc(PARKING_DOC_REF);
+        let currentOccupied = 0;
+        if (docSnap.exists()) {
+          currentOccupied = docSnap.data().occupied || 0;
+        }
+
+        let newOccupied = currentOccupied + change;
+        if (newOccupied < 0) newOccupied = 0;
+        if (newOccupied > TOTAL_SPACES) newOccupied = TOTAL_SPACES;
+
+        // Guardar el nuevo valor en Firestore (esto actualizará automáticamente a todos los conectados)
+        await setDoc(PARKING_DOC_REF, {
+          occupied: newOccupied,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Error al actualizar ocupación:", err);
+        alert("No se pudo actualizar el registro. Revisa tu conexión.");
+      }
+    };
+
+    // Funciones globales para el PIN de acceso del guardia
+    window.openPinModal = function() {
+      document.getElementById("pinModal").classList.remove("hidden");
+      document.getElementById("inputPin").value = "";
+      document.getElementById("inputPin").focus();
+    };
+
+    window.closePinModal = function() {
+      document.getElementById("pinModal").classList.add("hidden");
+    };
+
+    window.submitPin = function() {
+      const pin = document.getElementById("inputPin").value;
+      if (pin === "54321") { // PIN de prueba configurado
+        isGuardMode = true;
+        document.getElementById("guardPanel").classList.remove("hidden");
+        document.getElementById("userRoleBadge").innerHTML = `<i class="fa-solid fa-shield-halved text-uls-gold"></i> <strong class="text-uls-gold">Modo Guardia</strong>`;
+        closePinModal();
+      } else {
+        alert("PIN incorrecto. Intente nuevamente.");
+        document.getElementById("inputPin").value = "";
+      }
+    };
+
+    window.logoutGuard = function() {
+      isGuardMode = false;
+      document.getElementById("guardPanel").classList.add("hidden");
+      document.getElementById("userRoleBadge").innerHTML = `<i class="fa-solid fa-user text-slate-300"></i> Vista Pública`;
+    };
+  </script>
+</body>
+</html>
